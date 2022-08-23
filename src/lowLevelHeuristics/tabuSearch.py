@@ -82,6 +82,7 @@ def tabuSearchMetaHeuristic(input: Dict, **params):
             foundTime = time.time()
             bestSolution = cpy.copy(currentSolution)
             globalBestSolutionFOValue = currentSolutionFOValue
+            print(globalBestSolutionFOValue)
         
         endTime = time.time()
         #verifica se deve continuar executando

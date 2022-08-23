@@ -5,9 +5,6 @@ Created on Wed Jul 27 14:37:33 2022
 @author: Leonardo
 """
 
-import sys
-sys.path.append('..')
-
 from typing import Dict
 
 def firstImprovementHeuristic(input: Dict, **params):
@@ -26,17 +23,8 @@ def firstImprovementHeuristic(input: Dict, **params):
                     'knapsacksCapacities': [15,6,25],
                     'objectiveFunction': knapsackObjectiveFunction
                 }
-            
-            - 'objectiveFunction': A function that calculates the objective function value given a solution.
 
             - 'solution': A solution for the problem instance.
-    
-        **params: 
-            randomState: int (default: 0)
-                The random seed for the random choices.
-
-            lrc: float (default: 0.3)
-                Fraction of candidates that will be in the restricted candidates list.
 
     Results
     =======

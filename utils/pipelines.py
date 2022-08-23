@@ -1,6 +1,7 @@
 from typing import Callable, Dict, List, Text
 
 import json
+from time import time
 
 class Stage():
     def __init__(self, name: Text, callback: Callable, inputSchema: List, outputSchema: List, params: Dict):
@@ -11,6 +12,7 @@ class Stage():
         self.params = params
         self.input = None
         self.output = None
+        self.processTime = None
 
     def isCompatibleWith(self, stage) -> bool:
         # Checking if the previous stage's output has all data required by the next stage's input
@@ -24,22 +26,31 @@ class Stage():
 
     def process(self, input) -> Dict:
         self.input = input
+        
+        startTime = time()
         output = self.callback(input, **self.params)
+        finalTime = time()
+        
         self.output = output
+
+        self.processTime = finalTime - startTime
+
         return output
 
     def __str__(self):
         text = "\n"
-        text += f"Name: {self.name}\n"
-        text += f"Params: {self.params}\n"
-        text += f"Input: {self.input}\n"
-        text += f"Output: {self.output}\n"
+        text += f"- Name: {self.name}\n"
+        text += f"- Params: {self.params}\n"
+        text += f"- Input: {self.input}\n"
+        text += f"- Output: {self.output}\n"
+        text += f"- Running time: {self.processTime:.9f}s\n"
 
         return text
 
 class SequentialPipeline():
     def __init__(self):
         self.stages = []
+        self.processTime = None
 
     def hasStages(self) -> bool:
         return len(self.stages) != 0
@@ -90,16 +101,19 @@ class SequentialPipeline():
 
     def process(self, input: Dict):
         if self.hasStages():
+            self.processTime = 0
             nextStageInput = input
             for stage in self.stages:
+                print(f"Running {stage.name}")
                 currentStageOutput = stage.process(nextStageInput)
+                self.processTime += stage.processTime
                 nextStageInput = currentStageOutput
             return currentStageOutput
         else: 
             return None
 
     def __str__(self):
-        text = ""
+        text = f"Total running time: {self.processTime:.9f}s\n"
         if self.hasStages():
             for stage in self.stages:
                 text += stage.__str__()

@@ -20,7 +20,7 @@ def simulatedAnnealingMetaHeuristic(input, **params):
 
     saMax = params['saMax']
     coolingRate = params['coolingRate']
-    initialTemperature = params['initialTemperature']
+    startTemperature = params['startTemperature']
     freezingTemperature = params['freezingTemperature']
     randomState = params.get('randomState', 0)
 
@@ -35,7 +35,7 @@ def simulatedAnnealingMetaHeuristic(input, **params):
     currentSolution = cpy.copy(bestSolution)
     currentSolutionFOValue = objectiveFunction(problemInstance, currentSolution)
     #inicializa a temperatura
-    temperature = initialTemperature
+    temperature = startTemperature
     while temperature > freezingTemperature:
         #enquanto a temperatura inicial e maior que a temp de congelamento
         for i in range(saMax):
