@@ -54,7 +54,7 @@ def solve(
     ):
 
     __assertValidParams__(
-        input, coolingRate, startTemperature, freezingTemperature,
+        coolingRate, startTemperature, freezingTemperature,
         destroyOperators, repairOperators, rewards, segmentDecay,
         segmentLength, randomState, noImprovementMaxIterations
     )

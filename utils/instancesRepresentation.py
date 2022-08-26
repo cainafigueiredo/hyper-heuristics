@@ -11,15 +11,24 @@ class OptimizationInstance():
     def objective(self, solution = None, isMinimizing = True) -> float:
         return NotImplemented
 
-@dataclass
+
 class KnapsackInstance(OptimizationInstance):
-    numberOfItems: int = -1
-    numberOfKnapsacks: int = -1
-    itemsProfits: np.array = np.array([])
-    itemsWeights: np.array = np.array([])
-    knapsacksCapacities: np.array = np.array([])
-    noFeasibleSolutionPenalty: int = -1
-    solution: np.array = np.array([])
+    def __init__(
+        self, 
+        numberOfItems: int = -1,
+        numberOfKnapsacks: int = -1,
+        itemsProfits: np.array = np.array([]),
+        itemsWeights: np.array = np.array([]),
+        knapsacksCapacities: np.array = np.array([]),
+        solution: np.array = np.array([])
+    ):
+        self.numberOfItems = numberOfItems
+        self.numberOfKnapsacks = numberOfKnapsacks
+        self.itemsProfits = itemsProfits
+        self.itemsWeights = itemsWeights
+        self.knapsacksCapacities = knapsacksCapacities
+        self.noFeasibleSolutionPenalty = itemsProfits.sum()
+        self.solution = solution
 
     def __assertIsInitialized__(self):
         assert self.numberOfItems > 0

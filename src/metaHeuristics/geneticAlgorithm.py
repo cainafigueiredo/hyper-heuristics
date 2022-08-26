@@ -22,17 +22,13 @@ from src.metaHeuristics.geneticAlgorithmLib.mutation import Mutation
 from random import choice
 
 def __assertValidParams__(
-	populationSize, 
-	iterations,
-	numberOfItems
+	populationSize
 ):
 	assert populationSize > 0
-	assert iterations >= numberOfItems
 
 def solve(
 		input: OptimizationInstance,
-		populationSize: int = -1,
-		iterations: int = -1,
+		populationSize: int = -1
 	):
 	problemInstance = input['problemInstance']
 	numberOfItems = problemInstance.numberOfItems
@@ -41,10 +37,10 @@ def solve(
 	itemsWeights = problemInstance.itemsWeights  
 	knapsacksCapacities = problemInstance.knapsacksCapacities
 
+	iterations = numberOfItems + 1
+
 	__assertValidParams__(
-		populationSize, 
-		iterations,
-		numberOfItems
+		populationSize
 	)
 
 	items = ItemList(ItemParser(itemsProfits, itemsWeights).items)

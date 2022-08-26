@@ -1,0 +1,77 @@
+# Params that may be randomly sorted for each heuristic/metaheuristic
+params:
+  greedyRandomizedConstruction:
+    lrc: [0.25,0.5,0.75,1.0]
+    randomState: [10]
+
+  greedyConstruction:
+    sortIndexesFunction: ['sortIndexesMostProfitable', 'sortIndexesByProfitWeightDensity']
+
+  randomConstructive:
+    randomState: [10]
+
+  geneticAlgorithm:
+    populationSize: [30,50,100]
+
+  grasp:
+    lrc: [0.25,0.5,0.75,1.0]
+    randomState: [10]
+    maxRunningTime: [100,1200]
+    noImprovementMaxIterations: [100]
+
+  firstImprovement: {}
+
+  bestImprovement: {}
+
+  alns:
+    coolingRate: [0.97,0.8,0.6]
+    startTemperature: [300,200,100]
+    freezingTemperature: [1,0.5,0.25,0.01]
+    destroyOperators: [
+      ['getRandomRemoveOperator', 'getWorstRemoveOperator'],
+      ['getRandomRemoveOperator'],
+      ['getWorstRemoveOperator'],
+    ]
+    repairOperators: [
+      ['getRandomRepairOperator', 'getGreedyRepairOperator'],
+      ['getRandomRepairOperator'],
+      ['getGreedyRepairOperator'],
+    ]
+    rewards: [[20,10,5,2], [5,4,3,2]]
+    segmentDecay: [0.2,0.4,0.6,0.8]
+    segmentLength: [100,500,1000]
+    randomState: [10]
+    noImprovementMaxIterations: [100]
+
+  simulatedAnnealing:
+    saMax: [100,250,500]
+    coolingRate: [0.97,0.8,0.6]
+    startTemperature: [300,200,100]
+    freezingTemperature: [1,0.5,0.25,0.01]
+    randomState: [10]
+
+  tabuSearch:
+    tabuListLen: [10,100,200] 
+    maxSearchTimeInSeconds: [100,1200]
+    noImprovementMaxIterations: [100]
+
+# Heuristics/metaheuristics that can be randomly sorted in each pipeline stage
+stages:
+  firstStage:
+    - greedyRandomizedConstruction
+    # - greedyConstruction
+    - randomConstructive
+    # - geneticAlgorithm
+    - grasp
+  secondStage:
+    - firstImprovement
+    # - bestImprovement
+    # - alns
+    - simulatedAnnealing
+    - tabuSearch
+  thirdStage:
+    - firstImprovement
+    # - bestImprovement
+    # - alns
+    - simulatedAnnealing
+    - tabuSearch
