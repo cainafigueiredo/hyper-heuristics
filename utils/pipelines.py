@@ -99,14 +99,17 @@ class SequentialPipeline():
         components = json.loads(componentsJSONPath)
         return self.loadStagesFromDict(components)
 
-    def process(self, input: Dict):
+    def process(self, input: Dict, callbackStage: Callable = None):
         if self.hasStages():
             self.processTime = 0
             nextStageInput = input
             for stage in self.stages:
-                print(f"Running {stage.name}")
                 currentStageOutput = stage.process(nextStageInput)
                 self.processTime += stage.processTime
+                
+                if not callbackStage is None: 
+                    callbackStage(stage)
+
                 nextStageInput = currentStageOutput
             return currentStageOutput
         else: 

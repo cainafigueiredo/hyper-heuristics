@@ -1,9 +1,14 @@
-import sys
-sys.path.append('..')
+# -*- coding: utf-8 -*-
 
-from typing import List, Dict, Text
+"""
+@author: Leonardo Rosas Leal, Daniel dos Santos and Cainã Figueiredo Pereira
+@email: leoleal@cos.ufrj.br, ddsantos@cos.ufrj.br, cainafpereira@cos.ufrj.br
+@date: 2022-08-25
+"""
+
+from typing import Callable, Dict, Text
 from utils.pipelines import SequentialPipeline, Stage
-import lowLevelHeuristics
+from utils.instancesRepresentation import OptimizationInstance
 
 class HyperHeuristic():
     def __init__(self):
@@ -18,14 +23,11 @@ class HyperHeuristic():
     def addHyperHeuristicComponentsFromJSON(self, componentsJSONPath: Text):
         self.pipeline.loadStagesFromJSON(componentsJSONPath)
 
-    def printAvailableLowLevelHeuristics(self) -> List[Text]:
-        lowLevelHeuristics.printAvailableLowLevelHeuristics()
-
-    def getSolution(self, problemInstance):
+    def getSolution(self, problemInstance: OptimizationInstance, callbackStage: Callable = None):
         input = {
             'problemInstance': problemInstance
         }
-        return self.pipeline.process(input)
+        return self.pipeline.process(input, callbackStage)
 
     def __str__(self):
         return self.pipeline.__str__()
