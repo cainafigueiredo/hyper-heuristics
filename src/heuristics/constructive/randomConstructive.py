@@ -13,10 +13,10 @@ from utils.instancesRepresentation import OptimizationInstance
 
 def solve(
         input: OptimizationInstance, 
-        randomState: int = None,    
+        randomState: int = -1,    
         **kwargs
     ):
-    assert randomState != None
+    assert randomState >= 0
 
     problemInstance = input['problemInstance']
 

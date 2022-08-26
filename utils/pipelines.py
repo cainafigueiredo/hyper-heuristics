@@ -1,6 +1,5 @@
 from typing import Callable, Dict, List, Text
 
-import json
 from time import time
 
 class Stage():
@@ -96,8 +95,7 @@ class SequentialPipeline():
         return 0
 
     def loadStagesFromJSON(self, componentsJSONPath: Text):
-        components = json.loads(componentsJSONPath)
-        return self.loadStagesFromDict(components)
+        raise NotImplemented
 
     def process(self, input: Dict, callbackStage: Callable = None):
         if self.hasStages():
@@ -114,6 +112,9 @@ class SequentialPipeline():
             return currentStageOutput
         else: 
             return None
+
+    def getStagesNames(self):
+        return [stage.name for stage in self.stages]
 
     def __str__(self):
         text = f"Total running time: {self.processTime:.9f}s\n"

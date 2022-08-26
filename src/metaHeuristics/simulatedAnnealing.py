@@ -10,7 +10,6 @@ import time
 import math as mat
 import copy
 import random as rand
-from tracemalloc import start
 
 from utils.instancesRepresentation import OptimizationInstance
 

@@ -7,7 +7,7 @@
 """
 
 import copy
-from typing import Dict
+
 from utils.instancesRepresentation import OptimizationInstance
 
 def solve(input: OptimizationInstance, **kwargs):

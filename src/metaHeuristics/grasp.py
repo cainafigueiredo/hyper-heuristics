@@ -8,9 +8,6 @@
 
 import time
 
-import sys
-sys.path.append('..')
-
 from utils.instancesRepresentation import OptimizationInstance
 from src.heuristics.localSearch import firstImprovement
 from src.heuristics.constructive import greedyRandomizedConstruction

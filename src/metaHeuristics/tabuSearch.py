@@ -24,7 +24,7 @@ def __assertValidParams__(
     assert noImprovementMaxIterations > 0
 
 def solve(
-        input: Dict, 
+        input: OptimizationInstance, 
         tabuListLen: int = -1, 
         maxSearchTimeInSeconds: int = -1, 
         noImprovementMaxIterations: int = -1, 

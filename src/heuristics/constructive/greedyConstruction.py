@@ -6,9 +6,6 @@
 @date: 2022-08-25
 """
 
-import sys
-sys.path.append('../..')
-
 import numpy as np
 
 from typing import Callable

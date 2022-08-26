@@ -6,7 +6,6 @@
 @date: 2022-08-25
 """
 
-from typing import Callable
 import numpy as np
 import random as rand
 

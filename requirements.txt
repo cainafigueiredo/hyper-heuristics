@@ -1,2 +1,3 @@
-alns
-numpy
+alns==4.1.0
+numpy==1.23.2
+PyYAML==6.0

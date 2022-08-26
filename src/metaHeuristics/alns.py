@@ -8,8 +8,6 @@
 
 import numpy as np
 
-from typing import List
-
 from utils.instancesRepresentation import OptimizationInstance
 
 from alns import ALNS
@@ -18,7 +16,6 @@ from alns.accept import SimulatedAnnealing
 from alns.stop import NoImprovement
 
 def __assertValidParams__(
-    input,
     coolingRate,
     startTemperature,
     freezingTemperature,
@@ -28,9 +25,8 @@ def __assertValidParams__(
     segmentDecay,
     segmentLength,
     randomState,
-    noImprovementMaxIterations,
+    noImprovementMaxIterations
 ):
-    assert input != None
     assert destroyOperators.size > 0
     assert repairOperators.size > 0
     assert randomState > 0
