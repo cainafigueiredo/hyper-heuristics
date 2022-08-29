@@ -7,7 +7,7 @@
 """
 
 import copy
-
+''
 from utils.instancesRepresentation import OptimizationInstance
 
 def solve(input: OptimizationInstance, **kwargs):
@@ -26,9 +26,11 @@ def solve(input: OptimizationInstance, **kwargs):
             for j in range(1, numberOfKnapsacks + 1):
                 solution[i] = j
                 currentSolutionFOValue = problemInstance.objective(solution, isMinimizing = False)
+                # print("i", i, "totalWeight", problemInstance.calculateKnapsacksWeights(solution), "j", j, "Current:",currentSolutionFOValue, "| Best:", bestSolutionFOValue)
                 if currentSolutionFOValue > bestSolutionFOValue:
                     improved = True
                     bestSolutionFOValue = currentSolutionFOValue
+                    # print("Changed:",bestSolutionFOValue, currentSolutionFOValue)
                     break
             
             if improved:

@@ -17,10 +17,10 @@ class KnapsackInstance(OptimizationInstance):
         self, 
         numberOfItems: int = -1,
         numberOfKnapsacks: int = -1,
-        itemsProfits: np.array = np.array([]),
-        itemsWeights: np.array = np.array([]),
-        knapsacksCapacities: np.array = np.array([]),
-        solution: np.array = np.array([])
+        itemsProfits: np.array = np.array([], dtype = int),
+        itemsWeights: np.array = np.array([], dtype = int),
+        knapsacksCapacities: np.array = np.array([], dtype = int),
+        solution: np.array = np.array([], dtype = int)
     ):
         self.numberOfItems = numberOfItems
         self.numberOfKnapsacks = numberOfKnapsacks
@@ -74,7 +74,12 @@ class KnapsackInstance(OptimizationInstance):
         for knapsack in range(numberOfKnapsacks):
             if totalKnapsacksWeights[knapsack] > knapsacksCapacities[knapsack]:
                 foValue -= noFeasiblePenalty * (totalKnapsacksWeights[knapsack] - knapsacksCapacities[knapsack])
-        
+                # Sometimes, overflow induces to a inversion of sign (negative -> positive)
+                # We assign it as -inf when it occurs
+                if foValue > 0:
+                    foValue = -np.inf
+                    break
+
         if isMinimizing:
             return -foValue
 

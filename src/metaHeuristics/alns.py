@@ -53,6 +53,10 @@ def solve(
         **kwargs
     ):
 
+    destroyOperators = np.array([v for v in destroyOperators])
+    repairOperators = np.array([v for v in repairOperators])
+    rewards = np.array([v for v in rewards])
+
     __assertValidParams__(
         coolingRate, startTemperature, freezingTemperature,
         destroyOperators, repairOperators, rewards, segmentDecay,

@@ -1,42 +1,53 @@
-# Params that may be randomly sorted for each heuristic/metaheuristic
+# Params that may be randomly sorted for each heuristic/metaheuristic/operators
 params:
+  # Destroy operators
+  randomRemove:
+    destroyRate: [0.25,0.5,0.75]
+
+  worstRemove:
+    destroyRate: [0.25,0.5,0.75]
+    sortIndexesFunction: ['profit', 'density']
+
+  # Repair operators
+  randomRepair: {}
+
+  greedyRepair:
+    sortIndexesFunction: ['profit', 'density']
+
+  # Heuristics
   greedyRandomizedConstruction:
     lrc: [0.25,0.5,0.75,1.0]
     randomState: [10]
 
   greedyConstruction:
-    sortIndexesFunction: ['sortIndexesMostProfitable', 'sortIndexesByProfitWeightDensity']
+    sortIndexesFunction: ['profit', 'density']
 
   randomConstructive:
     randomState: [10]
-
-  geneticAlgorithm:
-    populationSize: [30,50,100]
-
-  grasp:
-    lrc: [0.25,0.5,0.75,1.0]
-    randomState: [10]
-    maxRunningTime: [100,1200]
-    noImprovementMaxIterations: [100]
 
   firstImprovement: {}
 
   bestImprovement: {}
 
+  # Metaheuristics
+  geneticAlgorithm:
+    crossoverRate: [0.6,0.7,0.8]
+    populationSize: [250,500,1000]
+    mutationRate: [0.1,0.2,0.3,0.4]
+    generations: [100,200,300]
+
+  grasp:
+    lrc: [0.25,0.5,0.75,1.0]
+    randomState: [10]
+    maxRunningTime: [100,300]
+    noImprovementMaxIterations: [100]
+
   alns:
     coolingRate: [0.97,0.8,0.6]
     startTemperature: [300,200,100]
     freezingTemperature: [1,0.5,0.25,0.01]
-    destroyOperators: [
-      ['getRandomRemoveOperator', 'getWorstRemoveOperator'],
-      ['getRandomRemoveOperator'],
-      ['getWorstRemoveOperator'],
-    ]
-    repairOperators: [
-      ['getRandomRepairOperator', 'getGreedyRepairOperator'],
-      ['getRandomRepairOperator'],
-      ['getGreedyRepairOperator'],
-    ]
+    destroyOperators: ['randomRemove', 'worstRemove']
+    repairOperators: ['randomRepair', 'greedyRepair']
     rewards: [[20,10,5,2], [5,4,3,2]]
     segmentDecay: [0.2,0.4,0.6,0.8]
     segmentLength: [100,500,1000]
@@ -52,26 +63,26 @@ params:
 
   tabuSearch:
     tabuListLen: [10,100,200] 
-    maxSearchTimeInSeconds: [100,1200]
+    maxSearchTimeInSeconds: [100,300]
     noImprovementMaxIterations: [100]
 
 # Heuristics/metaheuristics that can be randomly sorted in each pipeline stage
 stages:
   firstStage:
     - greedyRandomizedConstruction
-    # - greedyConstruction
+    - greedyConstruction
     - randomConstructive
-    # - geneticAlgorithm
+    - geneticAlgorithm
     - grasp
   secondStage:
     - firstImprovement
-    # - bestImprovement
-    # - alns
+    - bestImprovement
+    - alns
     - simulatedAnnealing
     - tabuSearch
   thirdStage:
     - firstImprovement
-    # - bestImprovement
-    # - alns
+    - bestImprovement
+    - alns
     - simulatedAnnealing
     - tabuSearch

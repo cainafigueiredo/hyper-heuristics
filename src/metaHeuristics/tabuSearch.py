@@ -44,7 +44,7 @@ def solve(
     noImprovementIterationsCount = 0
 
     nextFreePosTabuList = 0
-    tabuList = np.zeros([2, tabuListLen])
+    tabuList = np.zeros([2, tabuListLen], dtype = int)
     globalBestSolution = initialSolution
     globalBestSolutionFOValue = problemInstance.objective(globalBestSolution, isMinimizing = False)
     currentSolution = copy.copy(globalBestSolution)

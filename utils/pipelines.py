@@ -12,6 +12,7 @@ class Stage():
         self.input = None
         self.output = None
         self.processTime = None
+        self.cumulativeProcessTime = None
 
     def isCompatibleWith(self, stage) -> bool:
         # Checking if the previous stage's output has all data required by the next stage's input
@@ -104,6 +105,7 @@ class SequentialPipeline():
             for stage in self.stages:
                 currentStageOutput = stage.process(nextStageInput)
                 self.processTime += stage.processTime
+                stage.cumulativeProcessTime = stage.processTime
                 
                 if not callbackStage is None: 
                     callbackStage(stage)

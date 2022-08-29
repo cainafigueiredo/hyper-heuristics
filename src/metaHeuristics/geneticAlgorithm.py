@@ -1,145 +1,247 @@
-# -*- coding: utf-8 -*-
+# Author: Guled
+# Problem: Multiple Knapsack
 
-"""
-@author: Leonardo Rosas Leal, Daniel dos Santos and Cainã Figueiredo Pereira
-@email: leoleal@cos.ufrj.br, ddsantos@cos.ufrj.br, cainafpereira@cos.ufrj.br
-@date: 2022-08-25
-"""
-
+import random
+from typing import Dict
 import numpy as np
+import copy
+import random
+from collections import namedtuple
+from utils.instancesRepresentation import KnapsackInstance, OptimizationInstance
 
-from utils.instancesRepresentation import OptimizationInstance
-from src.metaHeuristics.geneticAlgorithmLib.parser import ItemParser, KnapsackParser
-from src.metaHeuristics.geneticAlgorithmLib.chromosome import Chromosome
-from src.metaHeuristics.geneticAlgorithmLib.factory import ChromosomeFactory, PopulationFactory
-from src.metaHeuristics.geneticAlgorithmLib.crossover import OnePoint
-from src.metaHeuristics.geneticAlgorithmLib.item import ItemList
-from src.metaHeuristics.geneticAlgorithmLib.knapsack import KnapsackList
-from src.metaHeuristics.geneticAlgorithmLib.fitness import FitnessFunction
-from src.metaHeuristics.geneticAlgorithmLib.selection import RouletteSelection
-from src.metaHeuristics.geneticAlgorithmLib.population import Population
-from src.metaHeuristics.geneticAlgorithmLib.mutation import Mutation
-from random import choice
+# Class to represent biological processes
+class BiologicalProcessManager:
+		'''
+			Crossover Function
+			- The process of One-Point crossover is exercised in this function.
+		'''
+		def crossover(crossoverRate, parentOne, parentTwo, problemInstance):
+			random_probability = random.random()
 
-def __assertValidParams__(
-	populationSize
-):
-	assert populationSize > 0
+			if random_probability < crossoverRate:
+				return (parentOne, parentTwo)
+			else:
+				pivot = random.randint(0, len(parentOne.genotype_representation)-1)
+
+				child_one_genotype = parentOne.genotype_representation[:pivot] + parentTwo.genotype_representation[pivot:]
+				child_two_genotype = parentTwo.genotype_representation[:pivot] + parentOne.genotype_representation[pivot:]
+
+				child_one = Chromosome(parentOne.numberOfKnapsacksReference, parentOne.numberOfObjectsReference, child_one_genotype, problemInstance = problemInstance)
+				child_two = Chromosome(parentOne.numberOfKnapsacksReference, parentOne.numberOfObjectsReference, child_two_genotype, problemInstance = problemInstance)
+
+				child_one.phenotype_representation = parentOne.phenotype_representation
+				child_two.phenotype_representation = parentOne.phenotype_representation
+
+
+				return (child_one, child_two)
+
+		'''
+			Mutation function
+			- The process of Random Resetting is exercised in this function.
+		'''
+		def mutate(mutationRate, child, numberOfKnapsacks):
+			for index, position in enumerate(child.genotype_representation):
+				random_probability = random.random()
+				'''
+					(Random Resetting) "Flip" the position with another knapsack if probability < mutationRate
+				'''
+				if random_probability < mutationRate:
+					child.genotype_representation[index] = random.randint(0,numberOfKnapsacks)
+
+# Class to represent chromosome
+class Chromosome:
+
+	fitness = None # Chromosomes fitness
+	phenotype_representation = None # Phenotype representation
+
+	def __init__(self, numberOfKnapsacks, numberOfItems, genotype_representation = None, problemInstance = None):
+		self.numberOfKnapsacksReference = numberOfKnapsacks
+		self.numberOfObjectsReference = numberOfItems
+		self.problemInstance = problemInstance
+
+		if genotype_representation == None:
+			self.genotype_representation = [random.randint(0,(numberOfKnapsacks)) for x in range(0, numberOfItems)]
+		else:
+			self.genotype_representation = genotype_representation
+
+		self.length_of_encoding = len(self.genotype_representation)
+
+	'''
+	 Generates a fitness for all the chromosomes by aggregating their benefits/values
+	'''
+	def generateFitness(self, knapsackList):
+		''' Make a copy of the knapsack list to be used to evaluate if objects in the chromsome
+			exceed C using the 'amountUsed' attribute
+		'''
+
+		#print("ORIGINAL CHROM: {}".format(self.genotype_representation))
+		knapsacks = copy.deepcopy(knapsackList)
+		fitnessScore = 0
+		done = False
+		for i, placement_of_object in enumerate(self.genotype_representation):
+			if placement_of_object == 0:
+				continue
+			else:
+				for knapsack in knapsacks:
+					if knapsack.id == placement_of_object:
+						# if it's over the capacity, change it's bag and revaluate
+						if self.phenotype_representation[i].weight > knapsack.capacity:
+							while(not done):
+								self.genotype_representation[i] = random.randint(0,(self.numberOfKnapsacksReference))
+
+								if self.genotype_representation[i] == 0:
+									break
+								else:
+									current_knapsack = next((sack for sack in knapsacks if sack.id == self.genotype_representation[i]),None)
+									if self.phenotype_representation[i].weight > current_knapsack.capacity:
+										continue
+									if self.phenotype_representation[i].weight <= current_knapsack.capacity:
+										fitnessScore += self.phenotype_representation[i].value
+										'''We now subtract the objects weight by the knapsacks capacity
+										   so that we can keep track of how much space the knapsack has left
+										   in the event that another object goes into the same knapsack
+										'''
+										current_knapsack.capacity = (current_knapsack.capacity - self.phenotype_representation[i].weight)
+										break
+						else:
+							fitnessScore += self.phenotype_representation[i].value
+							'''We now subtract the objects weight by the knapsacks capacity
+							   so that we can keep track of how much space the knapsack has left
+							   in the event that another object goes into the same knapsack
+							'''
+							knapsack.capacity = (knapsack.capacity - self.phenotype_representation[i].weight)
+
+		solution = np.array(self.genotype_representation, dtype = int)
+		fitnessScore = self.problemInstance.objective(solution, isMinimizing = False)		
+
+		# update the chromosomes fitness
+		self.fitness = fitnessScore
+
+class Knapsack:
+	def __init__(self, id, capacity):
+		self.id = id
+		self.capacity = capacity
+
+class Population:
+
+	Phenotype = namedtuple('Phenotype', 'id weight value')
+	knapsackList = [] # list of knapsacks
+	knapSackEvaluationList = [] # used for generating fitness of chromosomes
+	population = []
+
+	def __init__(self, size):
+		self.populationSize = size
+		self.numberOfKnapsacks = 0
+
+	def select_parents(self,tournament):
+		'''
+			Tournament selection is being used to find two parents
+		'''
+		first_fittest_indiv = None
+		second_fittest_indiv = None
+
+		for individual in tournament:
+			# Check if this indivudal is fitter than the current fittist individual
+			if first_fittest_indiv == None or individual.fitness > first_fittest_indiv.fitness:
+				first_fittest_indiv = individual
+
+		tournament.remove(first_fittest_indiv)
+
+		for individual in tournament:
+			# Check if this indivudal is fitter than the current fittist individual
+			if second_fittest_indiv == None or individual.fitness > second_fittest_indiv.fitness:
+				second_fittest_indiv = individual
+
+		#print("FIRST: {},  SECOND: {}".format(first_fittest_indiv.fitness,second_fittest_indiv.fitness))
+		return (first_fittest_indiv,second_fittest_indiv)
+
+
+	def initialize_population(self, problemInstance: OptimizationInstance):
+		numberOfKnapsacks = problemInstance.numberOfKnapsacks
+		self.numberOfKnapsacks = numberOfKnapsacks
+		numberOfItems = problemInstance.numberOfItems
+		itemsProfits = problemInstance.itemsProfits
+		itemsWeights = problemInstance.itemsWeights
+		knapsacksCapacities = problemInstance.knapsacksCapacities
+
+		for i, knapsackCapacity in enumerate(knapsacksCapacities, start = 1):
+			self.knapsackList.append(Knapsack((i), knapsackCapacity))
+
+		phenotype_representation = []
+		for i, profitWeight in enumerate(zip(itemsProfits, itemsWeights)):
+			value,weight = profitWeight
+			phenotype_representation.append(self.Phenotype(i,int(weight),int(value)))
+
+		# Create the initial population
+		for j in range(0,self.populationSize):
+			# Create a new chromosome
+			new_chromosome = Chromosome(numberOfKnapsacks,numberOfItems,problemInstance = problemInstance)
+			#  Give each chromosome it's phenotype representation
+			new_chromosome.phenotype_representation = phenotype_representation
+			# Evaluate each chromosome
+			new_chromosome.generateFitness(self.knapsackList)
+			# Add the chromsome to the population
+			self.population.append(new_chromosome)
+
+def find_the_best(population):
+	best = None
+	for individual in population:
+		if best == None or individual.fitness > best.fitness:
+			best = individual
+	return best
 
 def solve(
-		input: OptimizationInstance,
-		populationSize: int = -1
+		input: Dict,
+		crossoverRate: float = None,
+		populationSize: float = None,
+		mutationRate: float = None,
+		generations: float = None,
+		**kwargs
 	):
 	problemInstance = input['problemInstance']
-	numberOfItems = problemInstance.numberOfItems
-	numberOfKnapsacks = problemInstance.numberOfKnapsacks
-	itemsProfits = problemInstance.itemsProfits
-	itemsWeights = problemInstance.itemsWeights  
-	knapsacksCapacities = problemInstance.knapsacksCapacities
 
-	iterations = numberOfItems + 1
+	# Initialize population with random candidate solutions
+	population = Population(populationSize)
+	population.initialize_population(problemInstance)
 
-	__assertValidParams__(
-		populationSize
-	)
+	# Get a reference to the number of knapsacks
+	numberOfKnapsacks = population.numberOfKnapsacks
 
-	items = ItemList(ItemParser(itemsProfits, itemsWeights).items)
+	generation_counter = 0
+	while(generation_counter != generations):
+		current_population_fitnesses = [chromosome.fitness for chromosome in population.population]
+		# print("CURRENT GEN FITNESS: {} \n ".format(current_population_fitnesses))
+		new_gen = []
+		while(len(new_gen) != population.populationSize):
+			# Create tournament for tournament selection process
+			tournament = [population.population[random.randint(1, population.populationSize-1)] for individual in range(1, population.populationSize)]
+			# Obtain two parents from the process of tournament selection
+			parent_one, parent_two = population.select_parents(tournament)
+			# Create the offspring from those two parents
+			child_one,child_two = BiologicalProcessManager.crossover(crossoverRate,parent_one,parent_two,problemInstance)
 
-	knapsacks = KnapsackList(KnapsackParser(knapsacksCapacities))
+			# Try to mutate the children
+			BiologicalProcessManager.mutate(mutationRate, child_one, numberOfKnapsacks)
+			BiologicalProcessManager.mutate(mutationRate, child_two, numberOfKnapsacks)
 
-	# print('population size = ' + str(populationSize))
-	population = PopulationFactory(populationSize, numberOfItems, numberOfKnapsacks).gen()
-	iterations = 30
-	# print('iterations = {0}'.format(iterations))
+			# Evaluate each of the children
+			child_one.generateFitness(population.knapsackList)
+			child_two.generateFitness(population.knapsackList)
 
-	fittest_chromosome = None
-	fittest_chromosomes = []
-	for _ in range(iterations):
-		pop_fsum = 0
-		#calc population sum
-		for i in range(populationSize):
-			fitness_function = FitnessFunction(
-				population[i], 
-				items.get_all_on_items(population[i].solution, numberOfKnapsacks),
-				problemInstance
-			)
-			pop_fsum = pop_fsum + fitness_function.sum_all_fitness()
-			population[i] = fitness_function.chromosome
+			# Add the children to the new generation of chromsomes
+			new_gen.append(child_one)
+			new_gen.append(child_two)
 
-		parents = []
-		for i in range(2):#select 2 chromosomes for crossover
-			parent = RouletteSelection(population, problemInstance).do_selection()
-			parents.append(parent)
+		# Replace old generation with the new one
+		population.population = new_gen
+		generation_counter += 1
 
-		point = choice(range(0, len(parents[0]), 2))
+	bestSolution = np.array(find_the_best(population.population).genotype_representation, dtype = int)
 
-		children = OnePoint().exe(parents[0], parents[1], point)
-
-		probability = 100
-		mutated_children = []
-		for i in range(2):
-			mutated_children.append(Mutation(children[i], probability, problemInstance).exe())      #mutate offspring
-
-		i = 0
-		for chromosome in population: #replace current population with new one
-			if str(chromosome) == str(parents[0]):
-				population[i] = mutated_children[0]
-				i = i + 1
-			elif str(chromosome) == str(parents[1]):
-				population[i] = mutated_children[1]
-				i = i + 1
-			else:
-				i = i + 1
-
-		#get list of fitness for each individual
-		fsums = []
-		for i in range(populationSize):
-			fitness_function = FitnessFunction(population[i], items.get_all_on_items(population[i].solution, numberOfKnapsacks), problemInstance)
-			fsums.append(fitness_function.sum_all_fitness())
-			population[i] = fitness_function.chromosome
-
-		#get fittest individual of current population
-		# print('fsums = ' + str(fsums))
-		max_fsum = max(fsums)
-		# print('this max fsum ' + str(max_fsum))
-		for i in range(populationSize):
-			if float(fsums[i]) == float(max_fsum):
-				fittest_chromosome = population[i]
-
-		fittest_chromosomes.append(fittest_chromosome)
-		# print('fittest solution from this population ' + str(fittest_chromosome) + ' where fsum = ' + str(max_fsum))
-		# print('population fsum = ' + str(pop_fsum))
-		# print(population)
-
-	fittest_fsums = []
-	for i in range(numberOfItems):
-		fitness_function = FitnessFunction(fittest_chromosomes[i], items.get_all_on_items(fittest_chromosomes[i].solution, numberOfKnapsacks), problemInstance)
-		fittest_fsums.append(fitness_function.sum_all_fitness())
-		if i < populationSize:
-			population[i] = fitness_function.chromosome
-
-	# print('fittest fsums = ' + str(fittest_fsums))
-
-	fittest_max_fsum = max(fittest_fsums)
-	for i in range(numberOfItems):
-		if float(fittest_fsums[i]) == float(fittest_max_fsum):
-			final_chromosome = fittest_chromosomes[i]
-
-	# print('fittest solutions from all populations \n \n' + str(Population(fittest_chromosomes)))
-	#f_max_fsum = fitness_function.sum_all_fitness()
-	#final_chromosome = fitness_function.chromosome
-	# print('final fittest solution = ' + str(final_chromosome) + ', where fsum = ' + str(fittest_max_fsum))
-	result_knapsack = items.get_all_on_items(final_chromosome, numberOfKnapsacks)
-	solution = np.zeros(numberOfItems, dtype = int)
-	
-	for knapsack in result_knapsack:
-		for item in result_knapsack[knapsack]:
-			solution[item.index] = knapsack
-
-	problemInstance.updateSolution(solution)
+	problemInstance.updateSolution(bestSolution)
 
 	returnValue = {
 		'problemInstance': problemInstance
-	}
+	} 
 
 	return returnValue
