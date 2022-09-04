@@ -105,7 +105,7 @@ class SequentialPipeline():
             for stage in self.stages:
                 currentStageOutput = stage.process(nextStageInput)
                 self.processTime += stage.processTime
-                stage.cumulativeProcessTime = stage.processTime
+                stage.cumulativeProcessTime = self.processTime
                 
                 if not callbackStage is None: 
                     callbackStage(stage)

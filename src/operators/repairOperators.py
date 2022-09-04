@@ -2,11 +2,16 @@ from typing import Callable
 
 import copy
 
-from utils.instancesRepresentation import OptimizationInstance
+from src.HyperHeuristic import State
 from utils.knapsackSortFunctions import sortIndexesByProfitWeightDensity
 
-def getRandomRepairOperator(**kwargs):
-    def randomRepair(instance: OptimizationInstance, randomState: int = 0):
+from .Operator import RepairOperator
+
+class RandomRepair(RepairOperator):
+    def __init__(self):
+        pass
+
+    def iterate(self, instance: State, randomState: int = 0):
         copyInstance = copy.deepcopy(instance)
 
         numberOfKnapsacks = instance.numberOfKnapsacks
@@ -36,10 +41,11 @@ def getRandomRepairOperator(**kwargs):
 
         return copyInstance
 
-    return randomRepair
-
-def getGreedyRepairOperator(sortIndexesFunction: Callable = sortIndexesByProfitWeightDensity, **kwargs):
-    def greedyRepair(instance: OptimizationInstance, randomState: int = 0):
+class GreedyRepair(RepairOperator):
+    def __init__(self, sortIndexesFunction: Callable = sortIndexesByProfitWeightDensity):
+        self.sortIndexesFunction = sortIndexesFunction
+        
+    def iterate(self, instance: State, randomState: int = 0):
         copyInstance = copy.deepcopy(instance)
 
         numberOfKnapsacks = instance.numberOfKnapsacks
@@ -47,7 +53,7 @@ def getGreedyRepairOperator(sortIndexesFunction: Callable = sortIndexesByProfitW
         knapsacksCapacities = instance.knapsacksCapacities
         knapsacksWeights = instance.calculateKnapsacksWeights(copyInstance.solution)
 
-        orderedIndexes = sortIndexesFunction(instance)
+        orderedIndexes = self.sortIndexesFunction(instance)
 
         unselectedItems = [i for i in orderedIndexes if copyInstance.solution[i] == 0]
         availableKnapsacks = list(range(numberOfKnapsacks))
@@ -70,4 +76,43 @@ def getGreedyRepairOperator(sortIndexesFunction: Callable = sortIndexesByProfitW
 
         return copyInstance
 
-    return greedyRepair
+class RegretInsertion(RepairOperator):
+    def __init__(self):
+        pass
+
+    def iterate(self, instance: State, randomState: int = 0):
+        copyInstance = copy.deepcopy(instance)
+        solution = copyInstance.solution
+
+        numberOfKnapsacks = copyInstance.numberOfKnapsacks
+
+        vetDifFO=[0]*len(solution)
+        vetBestMoc=[0]*len(solution)
+        
+        FO=copyInstance.objective(solution)
+        
+        for i in range(len(solution)):
+            firtsBestFO=FO
+            secondBestFO=FO
+            firtsMoch=0
+            secondMoch=0
+            parcFO=0
+        
+            if solution[i]==0:
+                for j in range(numberOfKnapsacks):
+                    solution[i]=j+1
+                    parcFO=copyInstance.objective(solution)
+
+                    if parcFO>=firtsBestFO:
+                        secondBestFO=firtsBestFO
+                        firtsBestFO=parcFO
+                        secondMoch=firtsMoch
+                        firtsMoch=j+1
+                        vetDifFO[i]=secondBestFO-FO
+                        vetBestMoc[i]=secondMoch
+                    solution[i]=0
+                    
+        idx=vetDifFO.index(max(vetDifFO))
+        solution[idx]=vetBestMoc[idx]
+        
+        return copyInstance
