@@ -11,7 +11,7 @@ class RandomRemove(DestroyOperator):
     def __init__(self, destroyRate: float):
         self.destroyRate = destroyRate
 
-    def iterate(self, instance: State, randomState: int = 0):
+    def __call__(self, instance: State, randomState: int = 0):
         copyInstance = copy.deepcopy(instance)
 
         numberOfItems = instance.numberOfItems
@@ -33,7 +33,7 @@ class WorstRemove(DestroyOperator):
         self.destroyRate = destroyRate
         self.sortIndexesFunction = sortIndexesFunction
 
-    def iterate(self, instance: State, randomState: int = 0):        
+    def __call__(self, instance: State, randomState: int = 0):        
         copyInstance = copy.deepcopy(instance)
 
         numberOfItems = instance.numberOfItems
@@ -52,7 +52,7 @@ class ShawRemove(DestroyOperator):
     def __init__(self, criteria: Text = 'profit'):
         self.criteria = criteria
 
-    def iterate(self, instance: State, randomState: int = 0):        
+    def __call__(self, instance: State, randomState: int = 0):        
         copyInstance = copy.deepcopy(instance)
         solution = copyInstance.solution
 
@@ -77,7 +77,7 @@ class ShawRemove(DestroyOperator):
         for x in Duplicates:
             setElemToDest=Indices[x]
             while 1:
-                indx=setElemToDest[randomState.randint(0,len(setElemToDest)-1)]
+                indx=setElemToDest[randomState.randint(0,len(setElemToDest))]
                 if solution[indx]!=0:
                     solution[indx]=0
                     break

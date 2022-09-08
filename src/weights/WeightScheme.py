@@ -7,6 +7,7 @@ from numpy.random import RandomState
 from src.operators.Operator import DestroyOperator, RepairOperator
 from src.operators.DestroyOperators import RandomRemove
 from src.local_search.LocalSearch import LocalSearch
+from src.initial_solution.ConstructiveHeuristic import ConstructiveHeuristic
 
 class WeightScheme(ABC):
     def __init__(self, scores: List[float], refinements, acceptances):
@@ -29,6 +30,11 @@ class WeightScheme(ABC):
     def acceptance_weights(self) -> np.ndarray:
         return self._acceptance_weights
 
+    def select_constructive(self, rnd_state: RandomState):
+        constructiveIndexes = [i for i, heuristic in enumerate(self._refinement) if isinstance(heuristic[1], ConstructiveHeuristic)]
+        idx = rnd_state.choice(constructiveIndexes)
+        return idx
+
     def select_refinement(
         self, rnd_state: RandomState
     ) -> int:
@@ -36,9 +42,9 @@ class WeightScheme(ABC):
             probs = refinement_weights / np.sum(refinement_weights)
             return rnd_state.choice(refinement_indexes, p=probs)
 
-        destroyOrLocalSearchIndexes = [i for i, refinement in enumerate(self._refinement) if isinstance(refinement[1], DestroyOperator) or isinstance(refinement[1], LocalSearch)]
-        destroyOrLocalSearchWeights = [self.refinement_weights[i] for i in destroyOrLocalSearchIndexes]
-        refinement_sorted_indexes = [select(destroyOrLocalSearchWeights, destroyOrLocalSearchIndexes)]
+        destroyOrLocalSearchOrConstructiveIndexes = [i for i, refinement in enumerate(self._refinement) if isinstance(refinement[1], DestroyOperator) or isinstance(refinement[1], LocalSearch) or isinstance(refinement[1], ConstructiveHeuristic)]
+        destroyOrLocalSearchOrConstructiveWeights = [self.refinement_weights[i] for i in destroyOrLocalSearchOrConstructiveIndexes]
+        refinement_sorted_indexes = [select(destroyOrLocalSearchOrConstructiveWeights, destroyOrLocalSearchOrConstructiveIndexes)]
 
         if isinstance(self._refinement[refinement_sorted_indexes[0]][1], DestroyOperator):
             repairIndexes = [i for i, refinement in enumerate(self._refinement) if isinstance(refinement[1], RepairOperator)]

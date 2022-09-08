@@ -16,13 +16,18 @@ class Statistics:
 
         self._destroy_operator_counts = defaultdict(lambda: [0, 0, 0, 0])
         self._repair_operator_counts = defaultdict(lambda: [0, 0, 0, 0])
+        self._refinement_weights = []
 
     @property
     def objectives(self) -> np.ndarray:
         """
         Returns an array of previous objective values, tracking progress.
         """
-        return np.array(self._objectives)
+        return self._objectives
+
+    @property
+    def refinement_weights(self) -> np.ndarray:
+        return self._refinement_weights
 
     @property
     def start_time(self) -> float:
@@ -126,3 +131,7 @@ class Statistics:
             Score indices used for the various iteration outcomes.
         """
         self._repair_operator_counts[operator_name][s_idx] += 1
+
+    def collect_refinement_weights(self, refinements_weights, refinements_names):
+        weights = {refinement_name: refinements_weights[i] for i, refinement_name in enumerate(refinements_names)}
+        self._refinement_weights.append(weights)

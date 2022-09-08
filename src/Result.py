@@ -39,6 +39,14 @@ class Result:
         """
         return self._statistics
 
+    @property
+    def refinement_weights(self) -> Statistics:
+        return self._statistics.refinement_weights
+
+    @property
+    def objectives(self) -> Statistics:
+        return self._statistics.objectives
+
     def plot_objectives(
         self,
         ax: Optional[Axes] = None,

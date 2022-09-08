@@ -11,7 +11,7 @@ class RandomRepair(RepairOperator):
     def __init__(self):
         pass
 
-    def iterate(self, instance: State, randomState: int = 0):
+    def __call__(self, instance: State, randomState: int = 0):
         copyInstance = copy.deepcopy(instance)
 
         numberOfKnapsacks = instance.numberOfKnapsacks
@@ -45,7 +45,7 @@ class GreedyRepair(RepairOperator):
     def __init__(self, sortIndexesFunction: Callable = sortIndexesByProfitWeightDensity):
         self.sortIndexesFunction = sortIndexesFunction
         
-    def iterate(self, instance: State, randomState: int = 0):
+    def __call__(self, instance: State, randomState: int = 0):
         copyInstance = copy.deepcopy(instance)
 
         numberOfKnapsacks = instance.numberOfKnapsacks
@@ -80,7 +80,7 @@ class RegretInsertion(RepairOperator):
     def __init__(self):
         pass
 
-    def iterate(self, instance: State, randomState: int = 0):
+    def __call__(self, instance: State, randomState: int = 0):
         copyInstance = copy.deepcopy(instance)
         solution = copyInstance.solution
 

@@ -1,16 +1,17 @@
 import logging
 import time
+import copy
 
-from typing import Callable, Dict, Tuple
+from typing import Callable, Dict, Text, Tuple
 from numpy import random as rnd
 
-from initial_solution.ConstructiveHeuristic import ConstructiveHeuristic
-from accept import AcceptanceCriterion
-from stop import StoppingCriterion
-from Statistics import Statistics
-from weights import WeightScheme
-from Result import Result
-from State import State
+from src.initial_solution.ConstructiveHeuristic import ConstructiveHeuristic
+from src.accept import AcceptanceCriterion
+from src.stop import StoppingCriterion
+from src.Statistics import Statistics
+from src.weights import WeightScheme
+from src.Result import Result
+from src.State import State
 # from operators.Operator import DestroyOperator, RepairOperator
 
 _BEST = 0
@@ -32,6 +33,10 @@ class HyperHeuristic:
     @property
     def refinement(self):
         return list(self._refinement.items())
+
+    @property
+    def refinementNames(self):
+        return list(self._refinement.keys())
 
     @property
     def acceptance(self):
@@ -56,9 +61,9 @@ class HyperHeuristic:
     def iterate(
         self,
         instance: State,
-        constructive_heuristic: ConstructiveHeuristic,
         weight_scheme: WeightScheme,
         stop: StoppingCriterion,
+        constructive_heuristic_name: Text = None,
         **kwargs,
     ) -> Result:
         if len(self._refinement) == 0:
@@ -70,21 +75,32 @@ class HyperHeuristic:
         stats = Statistics()
         stats.collect_runtime(time.perf_counter())
 
-        initial_solution = constructive_heuristic(self._rnd_state, instance, **kwargs)
-        init_obj = initial_solution.objective()
- 
+        if constructive_heuristic_name is None:
+            constructive_idx = weight_scheme.select_constructive(self._rnd_state)
+            constructive_heuristic_name, constructive_heuristic = self.refinement[constructive_idx]
+        else:
+            constructive_heuristic = self._refinement[constructive_heuristic_name]
+        
+        initial_solution = constructive_heuristic(instance, self._rnd_state)
+        init_obj = initial_solution.objective(isMinimizing = False)
+    
         stats.collect_objective(init_obj)
 
-        curr = best = initial_solution
+        curr = copy.deepcopy(initial_solution)
+        best = copy.deepcopy(initial_solution)
 
         while not stop(self._rnd_state, best, curr):
+            # The current selection method is based on Roulette Choice
+            # We randomly choose a low-level heuristic with a probability that is
+            # proportional to its weight.  
+            stats.collect_refinement_weights(weight_scheme._refinement_weights, self.refinementNames)
+            
             refinement_indexes = weight_scheme.select_refinement(
                 self._rnd_state
             )
             for refinement_idx in refinement_indexes:
                 refinement_name, refinement_method = self.refinement[refinement_idx]
-
-                cand = refinement_method.iterate(curr, self._rnd_state, **kwargs)
+                cand = refinement_method(curr, self._rnd_state, **kwargs)
 
             crit_idx = weight_scheme.select_acceptance(
                 self._rnd_state
@@ -92,12 +108,12 @@ class HyperHeuristic:
             crit_name, crit_method = self.acceptance[crit_idx]
 
             best, curr, s_idx = self._eval_cand(
-                crit_method, best, curr, cand, **kwargs
+                best, curr, cand, **kwargs
             )
 
             weight_scheme.update_weights(refinement_indexes, crit_idx, s_idx)
 
-            stats.collect_objective(curr.objective())
+            stats.collect_objective(curr.objective(isMinimizing = False))
             stats.collect_runtime(time.perf_counter())
 
         logger.info(f"Finished iterating in {stats.total_runtime:.2f}s.")
@@ -121,31 +137,28 @@ class HyperHeuristic:
 
     def _eval_cand(
         self,
-        crit: AcceptanceCriterion,
         best: State,
         curr: State,
         cand: State,
         **kwargs,
     ) -> Tuple[State, State, int]:
-        """
-        Considers the candidate solution by comparing it against the best and
-        current solutions. Candidate solutions are accepted based on the
-        passed-in acceptance criterion. The (possibly new) best and current
-        solutions are returned, along with a weight index (best, better,
-        accepted, rejected).
-
-        Returns
-        -------
-        A tuple of the best and current solution, along with the weight index.
-        """
         w_idx = _REJECT
 
-        if crit(self._rnd_state, best, curr, cand):  # accept candidate
+        accept_votes = 0
+        reject_votes = 0
+        for crit_name, crit in self.acceptance: 
+            if crit(self._rnd_state, best, curr, cand):
+                accept_votes += 1
+            else: 
+                reject_votes += 1 
+
+        if accept_votes >= reject_votes:  # accept candidate
             w_idx = _BETTER if cand.objective() < curr.objective() else _ACCEPT
             curr = cand
 
         if cand.objective() < best.objective():  # candidate is new best
             logger.info(f"New best with objective {cand.objective():.2f}.")
+            # best = copy.deepcopy(cand)
 
             # if self._on_best:
             #     cand = self._on_best(cand, self._rnd_state, **kwargs)
