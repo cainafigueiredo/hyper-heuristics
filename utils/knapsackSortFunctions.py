@@ -1,7 +1,7 @@
 from typing import Dict
 import numpy as np
 
-from .instancesRepresentation import KnapsackInstance
+from src.KnapsackInstance import KnapsackInstance
 
 def sortIndexesMostProfitable(problemInstance: KnapsackInstance):
     orderedIndexes = np.array(problemInstance.itemsProfits)

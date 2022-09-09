@@ -29,6 +29,7 @@ class HyperHeuristic:
         self._rnd_state = rnd_state
         self._refinement = {}
         self._acceptance: Dict[str, AcceptanceCriterion] = {}
+        self._on_best = None
 
     @property
     def refinement(self):
@@ -154,15 +155,15 @@ class HyperHeuristic:
 
         if accept_votes >= reject_votes:  # accept candidate
             w_idx = _BETTER if cand.objective() < curr.objective() else _ACCEPT
-            curr = cand
+            curr = copy.deepcopy(cand)
 
         if cand.objective() < best.objective():  # candidate is new best
-            logger.info(f"New best with objective {cand.objective():.2f}.")
-            # best = copy.deepcopy(cand)
+            # print(f"New best with objective {cand.objective():.2f}.")
+            best = copy.deepcopy(cand)
+            
+            if self._on_best:
+                cand = copy.deepcopy(self._on_best(best, self._rnd_state, **kwargs))
 
-            # if self._on_best:
-            #     cand = self._on_best(cand, self._rnd_state, **kwargs)
-
-            return cand, cand, _BEST
+            return best, cand, _BEST
 
         return best, curr, w_idx

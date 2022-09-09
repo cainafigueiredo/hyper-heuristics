@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 
-
 class State(ABC):
     """
     State object, which stores a solution via its decision variables. The

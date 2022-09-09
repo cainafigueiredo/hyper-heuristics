@@ -17,7 +17,7 @@ class KnapsackInstance(State):
         self.itemsProfits = itemsProfits
         self.itemsWeights = itemsWeights
         self.knapsacksCapacities = knapsacksCapacities
-        # self.noFeasibleSolutionPenalty = itemsProfits.sum()
+        self.noFeasibleSolutionPenalty = self.itemsProfits.sum() if not self.itemsProfits is None else None
         self.solution = solution
 
     def __assertIsInitialized__(self):
@@ -26,7 +26,6 @@ class KnapsackInstance(State):
         assert self.itemsProfits.size > 0
         assert self.itemsWeights.size > 0
         assert self.knapsacksCapacities.size > 0
-        assert self.noFeasibleSolutionPenalty > 0
         
     def __assertHasSolution__(self):
         assert self.solution.size > 0        

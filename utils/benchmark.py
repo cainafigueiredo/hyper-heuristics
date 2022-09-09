@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 
-from utils.instancesRepresentation import KnapsackInstance
+from src.KnapsackInstance import KnapsackInstance
 
 from typing import List, Text
 
