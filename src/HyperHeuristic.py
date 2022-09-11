@@ -2,7 +2,7 @@ import logging
 import time
 import copy
 
-from typing import Callable, Dict, Text, Tuple
+from typing import Callable, Dict, List, Text, Tuple
 from numpy import random as rnd
 
 from src.initial_solution.ConstructiveHeuristic import ConstructiveHeuristic
@@ -25,11 +25,30 @@ logger = logging.getLogger(__name__)
 
 class HyperHeuristic:
 
-    def __init__(self, rnd_state: rnd.RandomState = rnd.RandomState()):
+    def __init__(
+        self, 
+        stop: StoppingCriterion = None, 
+        acceptance: AcceptanceCriterion = None, 
+        rewards: List = [1,1,1,1], 
+        rnd_state: rnd.RandomState = rnd.RandomState()
+    ):
         self._rnd_state = rnd_state
+        self._rewards = rewards
         self._refinement = {}
-        self._acceptance: Dict[str, AcceptanceCriterion] = {}
+        self._acceptance = acceptance
+        self._stop = stop
         self._on_best = None
+        self._current_solution = None
+        self._best_solution = None
+        self._candidate_solution = None
+
+    @property
+    def current_solution(self):
+        return self._current_solution
+   
+    @property
+    def best_solution(self):
+        return self._best_solution
 
     @property
     def refinement(self):
@@ -41,7 +60,7 @@ class HyperHeuristic:
 
     @property
     def acceptance(self):
-        return list(self._acceptance.items())
+        return self._acceptance
 
     # TODO: reparação só pode após destruição. Destruição requer uma reparação
     def add_refinement(
@@ -51,75 +70,88 @@ class HyperHeuristic:
     ):
         self._refinement[name if name else refinement.__name__] = refinement
 
-    def add_acceptance(
-        self,
-        acceptance: AcceptanceCriterion,
-        name: str = None,
-    ):
-        self._acceptance[name if name else acceptance.__name__] = acceptance
+    def get_reward(self, rewardStatus):
+        return self._rewards[rewardStatus]
 
-    # TODO: Forçar uma reparação após uma destruição 
-    def iterate(
-        self,
-        instance: State,
-        weight_scheme: WeightScheme,
-        stop: StoppingCriterion,
-        constructive_heuristic_name: Text = None,
-        **kwargs,
-    ) -> Result:
-        if len(self._refinement) == 0:
-            return ValueError("Refinement set is null.")
-    
-        if len(self._acceptance) == 0:
-            return ValueError("Acceptance criterion set is null.")
-
-        stats = Statistics()
-        stats.collect_runtime(time.perf_counter())
-
+    def initial_solution(self, instance, constructive_heuristic_name: Text = None, rnd_state = rnd.RandomState(0)):
         if constructive_heuristic_name is None:
-            constructive_idx = weight_scheme.select_constructive(self._rnd_state)
-            constructive_heuristic_name, constructive_heuristic = self.refinement[constructive_idx]
+            constructiveIDs = [heuristicName for heuristicName, heuristic in self.refinement if isinstance(heuristic, ConstructiveHeuristic)]
+            constructive_heuristic_name = rnd_state.choice(constructiveIDs)
+            constructive_heuristic = self._refinement[constructive_heuristic_name]
         else:
             constructive_heuristic = self._refinement[constructive_heuristic_name]
-        
-        initial_solution = constructive_heuristic(instance, self._rnd_state)
-        init_obj = initial_solution.objective(isMinimizing = False)
-    
-        stats.collect_objective(init_obj)
-
-        curr = copy.deepcopy(initial_solution)
-        best = copy.deepcopy(initial_solution)
-
-        while not stop(self._rnd_state, best, curr):
-            # The current selection method is based on Roulette Choice
-            # We randomly choose a low-level heuristic with a probability that is
-            # proportional to its weight.  
-            stats.collect_refinement_weights(weight_scheme._refinement_weights, self.refinementNames)
             
-            refinement_indexes = weight_scheme.select_refinement(
-                self._rnd_state
-            )
-            for refinement_idx in refinement_indexes:
-                refinement_name, refinement_method = self.refinement[refinement_idx]
-                cand = refinement_method(curr, self._rnd_state, **kwargs)
+        initial_solution = constructive_heuristic(instance, self._rnd_state)
+        
+        self._current_solution = copy.deepcopy(initial_solution)
+        self._best_solution = copy.deepcopy(initial_solution)
 
-            crit_idx = weight_scheme.select_acceptance(
-                self._rnd_state
-            )
-            crit_name, crit_method = self.acceptance[crit_idx]
+        return initial_solution
 
-            best, curr, s_idx = self._eval_cand(
-                best, curr, cand, **kwargs
-            )
+    def refine(self, current_solution, refinement_name: Text):
+        assert refinement_name in self._refinement, "Low-Level Heuristic does not exist"
+        refinement_method = self._refinement[refinement_name]
+        candidate_solution = refinement_method(current_solution, self._rnd_state)
 
-            weight_scheme.update_weights(refinement_indexes, crit_idx, s_idx)
+        self._candidate_solution = copy.deepcopy(candidate_solution)
 
-            stats.collect_objective(curr.objective(isMinimizing = False))
-            stats.collect_runtime(time.perf_counter())
+        return candidate_solution
 
-        logger.info(f"Finished iterating in {stats.total_runtime:.2f}s.")
+    def eval_stop(self, rnd_state: rnd.RandomState, best, curr):
+        return self._stop(rnd_state, best, curr)
 
-        return Result(best, stats)
+    # TODO: Forçar uma reparação após uma destruição 
+    # def iterate(
+    #     self,
+    #     instance: State,
+    #     weight_scheme: WeightScheme,
+    #     stop: StoppingCriterion,
+    #     **kwargs,
+    # ) -> Result:
+    #     if len(self._refinement) == 0:
+    #         return ValueError("Refinement set is null.")
+    
+    #     if len(self._acceptance) == 0:
+    #         return ValueError("Acceptance criterion set is null.")
+
+    #     stats = Statistics()
+    #     stats.collect_runtime(time.perf_counter())
+    
+    #     stats.collect_objective(init_obj)
+
+    #     curr = copy.deepcopy(initial_solution)
+    #     best = copy.deepcopy(initial_solution)
+
+    #     while not stop(self._rnd_state, best, curr):
+    #         # The current selection method is based on Roulette Choice
+    #         # We randomly choose a low-level heuristic with a probability that is
+    #         # proportional to its weight.  
+    #         stats.collect_refinement_weights(weight_scheme._refinement_weights, self.refinementNames)
+            
+    #         refinement_indexes = weight_scheme.select_refinement(
+    #             self._rnd_state
+    #         )
+    #         for refinement_idx in refinement_indexes:
+    #             refinement_name, refinement_method = self.refinement[refinement_idx]
+    #             cand = refinement_method(curr, self._rnd_state, **kwargs)
+
+    #         crit_idx = weight_scheme.select_acceptance(
+    #             self._rnd_state
+    #         )
+    #         crit_name, crit_method = self.acceptance[crit_idx]
+
+    #         best, curr, s_idx = self.eval_cand(
+    #             best, curr, cand, **kwargs
+    #         )
+
+    #         weight_scheme.update_weights(refinement_indexes, crit_idx, s_idx)
+
+    #         stats.collect_objective(curr.objective(isMinimizing = False))
+    #         stats.collect_runtime(time.perf_counter())
+
+    #     logger.info(f"Finished iterating in {stats.total_runtime:.2f}s.")
+
+    #     return Result(best, stats)
 
     def on_best(self, func: _RefinementType):
         """
@@ -136,33 +168,28 @@ class HyperHeuristic:
         logger.debug(f"Adding on_best callback {func.__name__}.")
         self._on_best = func
 
-    def _eval_cand(
-        self,
-        best: State,
-        curr: State,
-        cand: State,
-        **kwargs,
-    ) -> Tuple[State, State, int]:
+    def eval_cand(self) -> Tuple[State, State, int]:
         w_idx = _REJECT
 
-        accept_votes = 0
-        reject_votes = 0
-        for crit_name, crit in self.acceptance: 
-            if crit(self._rnd_state, best, curr, cand):
-                accept_votes += 1
-            else: 
-                reject_votes += 1 
+        best = self._best_solution
+        curr = self._current_solution
+        cand = self._candidate_solution
 
-        if accept_votes >= reject_votes:  # accept candidate
+        crit = self._acceptance
+
+        if crit(self._rnd_state, best, curr, cand):  # accept candidate
             w_idx = _BETTER if cand.objective() < curr.objective() else _ACCEPT
             curr = copy.deepcopy(cand)
+            self._current_solution = curr
 
         if cand.objective() < best.objective():  # candidate is new best
             # print(f"New best with objective {cand.objective():.2f}.")
             best = copy.deepcopy(cand)
-            
+            self._best_solution = best
+
             if self._on_best:
-                cand = copy.deepcopy(self._on_best(best, self._rnd_state, **kwargs))
+                cand = copy.deepcopy(self._on_best(best, self._rnd_state))
+                self._candidate_solution = cand
 
             return best, cand, _BEST
 

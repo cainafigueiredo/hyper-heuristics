@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import copy
 import os
 
 from src.KnapsackInstance import KnapsackInstance
@@ -20,9 +21,13 @@ class Benchmark:
     def parseInstance(self, instance: Text):
         raise NotImplemented
 
+    def sampleInstance(self, n: int = 1):
+        raise NotImplemented
+
 class BinaryKnapsackBenchmark(Benchmark):
     def __init__(self, name: Text, benchmarkRootPath: Text):
         super().__init__(name, benchmarkRootPath)
+        self._instancesList = self.getInstancesList()
 
     def getInstancesList(self) -> List[str]:
         instances = os.listdir(f"{self.benchmarkRootPath}/instances")
@@ -70,3 +75,14 @@ class BinaryKnapsackBenchmark(Benchmark):
             f.write(" ".join([str(v) for v in instance.itemsProfits]) + "\n")
             f.write(" ".join([str(v) for v in instance.itemsWeights]) + "\n")
             f.write(" ".join([str(v) for v in instance.knapsacksCapacities]))
+
+    def sampleInstance(self):
+        sortedInstance = np.random.choice(self._instancesList)
+        instance = self.parseInstance(sortedInstance)
+        return sortedInstance, instance
+
+    def split(self, trainFraction = 0.3):
+        instances = copy.deepCopy(self._instancesList)
+        np.sort(instances)
+        trainSize = int(trainFraction  *len(instances))
+        return [instances[:trainSize], instances[trainSize:]]

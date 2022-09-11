@@ -29,12 +29,7 @@ class WeightScheme(ABC):
     @property
     def acceptance_weights(self) -> np.ndarray:
         return self._acceptance_weights
-
-    def select_constructive(self, rnd_state: RandomState):
-        constructiveIndexes = [i for i, heuristic in enumerate(self._refinement) if isinstance(heuristic[1], ConstructiveHeuristic)]
-        idx = rnd_state.choice(constructiveIndexes)
-        return idx
-
+        
     def select_refinement(
         self, rnd_state: RandomState
     ) -> int:
