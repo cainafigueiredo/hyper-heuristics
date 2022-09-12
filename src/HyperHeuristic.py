@@ -2,15 +2,12 @@ import logging
 import time
 import copy
 
-from typing import Callable, Dict, List, Text, Tuple
+from typing import Callable, List, Text, Tuple
 from numpy import random as rnd
 
 from src.initial_solution.ConstructiveHeuristic import ConstructiveHeuristic
 from src.accept import AcceptanceCriterion
 from src.stop import StoppingCriterion
-from src.Statistics import Statistics
-from src.weights import WeightScheme
-from src.Result import Result
 from src.State import State
 # from operators.Operator import DestroyOperator, RepairOperator
 
@@ -30,7 +27,8 @@ class HyperHeuristic:
         stop: StoppingCriterion = None, 
         acceptance: AcceptanceCriterion = None, 
         rewards: List = [1,1,1,1], 
-        rnd_state: rnd.RandomState = rnd.RandomState()
+        rnd_state: rnd.RandomState = rnd.RandomState(),
+        on_best: Callable[[State], State] = lambda cand: cand
     ):
         self._rnd_state = rnd_state
         self._rewards = rewards
@@ -99,59 +97,6 @@ class HyperHeuristic:
 
     def eval_stop(self, rnd_state: rnd.RandomState, best, curr):
         return self._stop(rnd_state, best, curr)
-
-    # TODO: Forçar uma reparação após uma destruição 
-    # def iterate(
-    #     self,
-    #     instance: State,
-    #     weight_scheme: WeightScheme,
-    #     stop: StoppingCriterion,
-    #     **kwargs,
-    # ) -> Result:
-    #     if len(self._refinement) == 0:
-    #         return ValueError("Refinement set is null.")
-    
-    #     if len(self._acceptance) == 0:
-    #         return ValueError("Acceptance criterion set is null.")
-
-    #     stats = Statistics()
-    #     stats.collect_runtime(time.perf_counter())
-    
-    #     stats.collect_objective(init_obj)
-
-    #     curr = copy.deepcopy(initial_solution)
-    #     best = copy.deepcopy(initial_solution)
-
-    #     while not stop(self._rnd_state, best, curr):
-    #         # The current selection method is based on Roulette Choice
-    #         # We randomly choose a low-level heuristic with a probability that is
-    #         # proportional to its weight.  
-    #         stats.collect_refinement_weights(weight_scheme._refinement_weights, self.refinementNames)
-            
-    #         refinement_indexes = weight_scheme.select_refinement(
-    #             self._rnd_state
-    #         )
-    #         for refinement_idx in refinement_indexes:
-    #             refinement_name, refinement_method = self.refinement[refinement_idx]
-    #             cand = refinement_method(curr, self._rnd_state, **kwargs)
-
-    #         crit_idx = weight_scheme.select_acceptance(
-    #             self._rnd_state
-    #         )
-    #         crit_name, crit_method = self.acceptance[crit_idx]
-
-    #         best, curr, s_idx = self.eval_cand(
-    #             best, curr, cand, **kwargs
-    #         )
-
-    #         weight_scheme.update_weights(refinement_indexes, crit_idx, s_idx)
-
-    #         stats.collect_objective(curr.objective(isMinimizing = False))
-    #         stats.collect_runtime(time.perf_counter())
-
-    #     logger.info(f"Finished iterating in {stats.total_runtime:.2f}s.")
-
-    #     return Result(best, stats)
 
     def on_best(self, func: _RefinementType):
         """

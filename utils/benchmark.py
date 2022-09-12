@@ -39,6 +39,11 @@ class BinaryKnapsackBenchmark(Benchmark):
         instanceName, _ = instance.split('/')
         return optimalFOs[optimalFOs['name'] == instanceName]['optimum'].values[0]
 
+    def getOptimalRunningTime(self, instance: Text) -> float:
+        instanceName, _ = instance.split('/')
+        with open(f"{self.benchmarkRootPath}/instances/{instanceName}/time.out") as f:
+            return float(f.readline().strip())
+
     def parseInstance(self, instance: Text) -> KnapsackInstance:
         numberOfItems = None
         numberOfKnapsacks = 1
